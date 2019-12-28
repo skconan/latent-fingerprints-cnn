@@ -9,6 +9,34 @@
 import cv2 as cv
 import os
 import numpy as np
+# import tensorflow as tf
+import colorama
+from PIL import Image
+from keras.preprocessing import image
+
+colorama.init()
+DEBUG = True
+
+
+def print_debug(*args, **kwargs):
+    global DEBUG
+    text = ""
+    if not "mode" in kwargs:
+        mode = "DETAIL"
+    else:
+        mode = kwargs['mode']
+    color_mode = {
+        "METHOD": colorama.Fore.BLUE,
+        "RETURN": colorama.Fore.GREEN,
+        "DETAIL": colorama.Fore.YELLOW,
+        "DEBUG": colorama.Fore.RED,
+        "END": colorama.Style.RESET_ALL,
+    }
+    if DEBUG:
+        for t in args:
+            text += " "+str(t)
+        print(color_mode[mode] + text + color_mode["END"])
+
 
 def get_file_path(dir_name):
     """
@@ -58,8 +86,44 @@ def imshow(name, mat, mapping=False):
         r,c,_ = mat.shape
 
     if mapping:
+        # mat = cv.applyColorMap(mat, cv.COLORMAP_HSV)
         mat = cv.applyColorMap(mat, cv.COLORMAP_HOT)
 
     if r < 100:
         mat = cv.resize(mat,None,fx=4,fy=4)
     cv.imshow(name,mat)
+
+def normalize_zeromean(img):
+    img = np.float32(img)
+    img = (img - 127.5)/127.5
+    return img 
+
+def load_image(path, img_rows=64, img_cols=64):
+    image_list = np.zeros((len(path),  img_rows, img_cols, 1))
+    for i, fig in enumerate(path):
+        #try:
+        img = image.load_img(fig, target_size=(img_rows, img_cols))
+        x = image.img_to_array(img).astype('float32')
+        # print(x.shape)
+        x = cv.cvtColor(x,cv.COLOR_BGR2GRAY)
+        x = np.reshape(x,(64,64,1))
+        # print(x.shape)
+        # x = normalize_zeromean(x)
+        x /= 255.
+        image_list[i] = x
+    return image_list
+
+def load_image_flat(path, img_rows=64, img_cols=64):
+    image_list = np.zeros((len(path),  img_rows*img_cols))
+    for i, fig in enumerate(path):
+        #try:
+        img = image.load_img(fig, target_size=(img_rows, img_cols))
+        x = image.img_to_array(img).astype('float32')
+        # print(x.shape)
+        x = cv.cvtColor(x,cv.COLOR_BGR2GRAY)
+        x = np.reshape(x,(img_rows*img_cols))
+        # x = x.ravel()
+        # print(x.shape)
+        x = normalize_zeromean(x)
+        image_list[i] = x
+    return image_list
