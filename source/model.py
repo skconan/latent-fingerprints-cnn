@@ -24,12 +24,15 @@ from keras import backend as K
 from fft import *
 
 def custom_loss(y_true, y_pred):
-    max_pixel = 1.0
-    return (10.0 * K.log((max_pixel ** 2) / (K.mean(K.square(y_pred - y_true), axis=-1)))) / 2.303
+    # max_pixel = 1.0
+    # return (10.0 * K.log((max_pixel ** 2) / (K.mean(K.square(y_pred - y_true), axis=-1)))) / 2.303
     # np.count_nonzero(y_true)
 
     # return (y_true * y_pred) / (K.abs(y_true) *K.abs(y_pred))
-    # return K.abs(y_true - y_pred)
+    return K.abs(1-(y_true/y_pred))
+    # print((y_true-y_pred+0.1))
+    # print(y_true+0.1)
+    # return K.abs((y_true-y_pred+0.1)/y_true+0.1)
 
 class Autoencoder:
     def __init__(self, model_dir, pred_dir, img_rows=64, img_cols=64, channels=1):
@@ -42,16 +45,19 @@ class Autoencoder:
 
         self.encoding_dim = 64
 
-        adm = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, decay=1e-6, amsgrad=True)
+        adm = Adam(lr=1e-4, decay=1e-6, amsgrad=True)
         # sgd = SGD(lr=0.001, decay=1e-4, momentum=0.9, nesterov=True)
         #sgd = SGD(lr=0.01, decay=1e-7, momentum=0.1, nesterov=True)
         #sgd = SGD(lr=0.01, decay=1e-3, momentum=0.8, nesterov=True)
         rms = RMSprop(lr=0.001, rho=0.9)
         self.autoencoder_model = self.build_model()
+        # self.autoencoder_model.load_weights(r"E:\OneDrive\KSIP\MachineLearning\cnn_ae_1577558083068039\model\model-073-0.0090.hdf5")
+
         self.autoencoder_model.compile(
             # loss='mse', optimizer=rms, metrics=['acc'])
             # loss='sparse_categorical_crossentropy', optimizer=rms, metrics=['acc'])
-            loss='mae', optimizer=rms, metrics=['acc'])
+            # loss=custom_loss, optimizer=adm, metrics=['acc'])
+            loss=custom_loss, optimizer=adm, metrics=['acc'])
             # loss=custom_loss, optimizer=adm, metrics=['acc'])
         # loss='mse', optimizer=sgd, metrics=['acc'])
 
@@ -130,7 +136,6 @@ class Autoencoder:
         # self.autoencoder_model = tfmot.sparsity.keras.prune_low_magnitude(self.autoencoder_model, pruning_schedule=pruning_schedule)
 
         # history = self.autoencoder_model.fit(x_train, y_train,
-        
         history = self.autoencoder_model.fit(x_train, y_train,
                                              batch_size=batch_size,
                                              epochs=epochs,
